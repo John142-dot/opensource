@@ -1,0 +1,282 @@
+local kavoUi = loadstring(game:HttpGet("https://pastebin.com/raw/vff1bQ9F"))()
+local window = kavoUi.CreateLib("Z⚡ Hub Script", "BloodTheme")
+
+-- Tabs
+local MainTab = window:NewTab("Main")
+local MiscTab = window:NewTab("Misc")
+local OtherTab = window:NewTab("Other")
+local CreditsTab = window:NewTab("Credits")
+local OthersTab = window:NewTab("Others")
+
+-- Sections
+local Main = MainTab:NewSection("Main - insanely obvious")
+local Misc = MiscTab:NewSection("Misc - less/not noticeable")
+local Other = OtherTab:NewSection("Other - some custom stuff")
+local Credits = CreditsTab:NewSection("Credits")
+local Others = OthersTab:NewSection("Coming soon!")
+
+-- Credits
+Credits:NewLabel("xHeptc - He made the UI library")
+Credits:NewLabel("Zonkey - Made dis script for z hub")
+Credits:NewButton("Pigeon - make script too", "awaw", function()
+    setclipboard("https://discord.gg/invite/jj4NC9ppSC")
+end)
+Credits:NewLabel("OP?")
+
+-- Settings for multiple functions
+local Hitbox = {
+  HeadSize = 8,
+  Disabled = false
+}
+
+local Miscs = {
+  CurrentThreads = 0,
+  MaxThreads = 2,
+  AimBot = false,
+  Delay = 0.5
+}
+
+_G.Config = {
+  Debug = true,
+  AimBot = {
+    Enabled = false,
+    TeamCheck = false,
+    WallCheck = true,
+    DamageCheck = false,
+    AutoShoot = true,
+    BetterTargetting = true,
+    AntiDetection = true,
+    UseVelocity = true,
+    ShootFactor = 150,
+    ShootProbability = 0.9,
+    Delay = 3,
+    InitDistance = 600,
+    RayLength = 600,
+    VisibilityFactor = 0.5,
+    VelocityFactor = 0.3
+  }
+}
+
+-- Killall Button
+Main:NewButton("Kill All", "Sends multiple shoot events, targeting every player in the server", function()
+  kill_all()
+end)
+
+function kill_all()
+  -- Equips the first tool it finds in your backpack
+  for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+      if v:FindFirstChild("Fire") then
+        game.Players.LocalPlayer.Character.Humanoid:EquipTool(v)
+      break
+    end
+  end
+
+  -- Sends a shoot event for every player online  
+  for i, v in pairs(game.Players:GetPlayers()) do
+    spawn(function()
+      pcall(function()
+        local Vec1 = Vector3.new(-186.46624755859375, 49.74998474121094, math.random(-49.323232, 49.488882))
+        local Vec2 = Vector3.new(-254.47802734375, 68.99893188476562, math.random(-49.323232, 49.488882))
+        local Vec3 = v.Character.LowerTorso
+        local Vec4 = Vector3.new(-222.7018585205078, 60.864871978759766, math.random(-49.323232, 49.488882))
+        
+        game:GetService("ReplicatedStorage").Remotes.Shoot:FireServer(Vec1, Vec2, Vec3, Vec4)
+      end)
+    end)
+  end
+end
+
+-- Killall Toggle
+Main:NewToggle("Loop Kill All", "The name says it all", function(state)
+  while state do
+    if Miscs.CurrentThreads < Miscs.MaxThreads and state then
+      spawn(function()
+          Miscs.CurrentThreads = Miscs.CurrentThreads + 1
+          kill_all()
+          Miscs.CurrentThreads = Miscs.CurrentThreads - 1
+      end)
+      task.wait(Miscs.Delay)
+    end
+  end
+end)
+
+-- The UI to change settings in the Miscs table
+Main:NewSlider("Max Threads", "How many threads should looped functions spawn", 20, 1, function(value)
+  Miscs.MaxThreads = value or Miscs.MaxThreads
+end)
+
+Main:NewSlider("Delay", "A variable used by a couple of functions.", 1, 0.001, function(value)
+  Miscs.Delay = value or 0.5
+end)
+
+-- Hitbox Toggle
+Misc:NewToggle("Hitbox", "Increase Range", function(state)
+  if state then
+    local function onRenderStepped()
+      if Hitbox.Disabled then return end
+      for _, player in pairs(game:GetService('Players'):GetPlayers()) do
+        if player.Name ~= game:GetService('Players').LocalPlayer.Name then
+          pcall(function()
+            local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+              rootPart.Size = Vector3.new(Hitbox.HeadSize, Hitbox.HeadSize, Hitbox.HeadSize)
+              rootPart.Transparency = 0.7
+              rootPart.BrickColor = BrickColor.new("Really black")
+              rootPart.Material = Enum.Material.Neon
+              rootPart.CanCollide = false
+            end
+          end)
+        end
+      end
+    end
+
+    game:GetService('RunService').RenderStepped:Connect(onRenderStepped)
+  else
+    Hitbox.Disabled = true
+  end
+end)
+
+Misc:NewSlider("Hitbox Size", "Adjust the hitbox size", 50, 1, function(value)
+  Hitbox.HeadSize = value or 15
+end)
+
+-- ESP Toggle
+Misc:NewToggle("ESP", "Player ESP", function(state)
+  if state then
+    local Settings = {
+      Material = Enum.Material.Neon,
+      Color = Color3.fromRGB(0, 255, 255),
+      Transparency = 0.7
+    }
+
+    local ScreenGui = Instance.new('ScreenGui', game.CoreGui)
+    ScreenGui.IgnoreGuiInset = true
+
+    local ViewportFrame = Instance.new('ViewportFrame', ScreenGui)
+    ViewportFrame.CurrentCamera = workspace.CurrentCamera
+    ViewportFrame.Size = UDim2.new(1, 0, 1, 0)
+    ViewportFrame.BackgroundTransparency = 1
+    ViewportFrame.ImageTransparency = Settings.Transparency
+
+    local Chasms = {}
+
+    local function generateChasm(player)
+      local Character = workspace:FindFirstChild(player.Name)
+      if Character then
+        for _, Part in pairs(Character:GetChildren()) do
+          if Part:IsA('BasePart') then
+            local Chasm = Part:Clone()
+            for _, Child in pairs(Chasm:GetChildren()) do
+              if Child:IsA('Decal') then
+                Child:Destroy()
+              end
+            end
+            Chasm.Parent = ViewportFrame
+            Chasm.Material = Settings.Material
+            Chasm.Color = Settings.Color
+            Chasm.Anchored = true
+            table.insert(Chasms, Chasm)
+          end
+        end
+      end
+    end
+
+    local function clearChasms()
+      for _, Chasm in pairs(Chasms) do
+        Chasm:Destroy()
+      end
+      Chasms = {}
+    end
+
+    game:GetService('RunService').RenderStepped:Connect(function()
+      clearChasms()
+      for _, Player in pairs(game:GetService('Players'):GetPlayers()) do
+        if Player ~= game:GetService('Players').LocalPlayer then
+          generateChasm(Player)
+        end
+      end
+    end)
+  end
+end)
+
+-- Invisibility Button
+Misc:NewButton("Invisibility", "Makes you invisible", function()
+  local Char = Players.LocalPlayer.Character
+  local touched = false
+  local tpdback = false
+  local box = Instance.new("Part")
+  box.Anchored = true
+  box.CanCollide = true
+  box.Size = Vector3.new(10, 1, 10)
+  box.Position = Vector3.new(0, 10000, 0)
+  box.Parent = workspace
+  local boxTouched =
+    box.Touched:connect(
+      function(part)
+        if (part.Parent.Name == Players.LocalPlayer.Name) then
+          if touched == false then
+            touched = true
+              local function apply()
+                local no = Char.HumanoidRootPart:Clone()
+                wait(.25)
+                Char.HumanoidRootPart:Destroy()
+                no.Parent = Char
+                Char:MoveTo(loc)
+                touched = false
+              end
+              
+              if Char then
+                apply()
+              end
+          end
+        end
+      end)
+
+  repeat
+    wait()
+  until Char
+  local cleanUp
+  cleanUp =
+    Players.LocalPlayer.CharacterAdded:connect(
+    function(char)
+      boxTouched:Disconnect()
+      box:Destroy()
+      cleanUp:Disconnect()
+    end)
+
+  loc = Char.HumanoidRootPart.Position
+  Char:MoveTo(box.Position + Vector3.new(0, .5, 0))
+end)
+
+Other:NewToggle("AimBot", "My custom aimbot, made specifically to work in this game", function(state)
+  if not Miscs.AimBot then
+    loadstring(game:HttpGet("https://wastebin-1-j0561772.deta.app/raw/rcgrylfj"))()
+    Miscs._G.AimBot = true -- Var that stores if the aimbot is loaded
+  end
+  _G.AimBot.Enabled = state or false
+end)
+
+--AimBot settings
+Other:NewToggle("AimBot - TeamCheck", "Will stop the aim bot from running if you're in the lobby", function(state)
+  _G.Config.AimBot.TeamCheck = state or _G.AimBot.TeamCheck
+end)
+Other:NewToggle("AimBot - WallCheck", "This should fix the very annoying aiming issue that other aimbots have when ran in this game", function(state)
+  _G.Config.AimBot.WallCheck = state or _G.AimBot.WallCheck
+end)
+Other:NewToggle("AimBot - DamageCheck", "Only use this feature if you cannot use WallCheck", function(state)
+  _G.Config.AimBot.DamageCheck = state or _G.AimBot.DamageCheck
+end)
+Other:NewToggle("AimBot - AutoShoot", "his will shoot the player if he is in your view, must be enabled for DamageCheck to work.", function(state)
+  _G.Config.AimBot.AutoShoot = state or _G.AimBot.AutoShoot
+end)
+
+-- Sliders
+Other:NewSlider("AimBot - Delay", "How fast will the aimbot try to send an shoot event again", 5, 0, function(val)
+  _G.Config.AimBot.Delay = val or _G.AimBot.Delay
+end)
+Other:NewSlider("AimBot - InitDistance", "If any player is within this distance, it will start the aimbot", 100, 30, function(val)
+  _G.Config.AimBot.InitDistance = val or _G.AimBot.InitDistance
+end)
+Other:NewSlider("AimBot - RayLength", "Used for wall detection, preferably should be equal with InitDistance", 100, 30, function(val)
+  _G.Config.AimBot.RayLength = val or _G.AimBot.RayLength
+end)
